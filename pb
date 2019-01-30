@@ -5,6 +5,7 @@ use IO::Socket::INET;
 use WWW::PushBullet;
 use File::Slurp;
 use Sys::Hostname;
+use File::Basename;
 use Env qw(HOME);
 
 # auto-flush on socket
@@ -56,9 +57,23 @@ else {
         }
     }
     else {
-        $data = read_file( $ARGV[0] );
-    }
+        if ( -B $ARGV[0] ) {
+            print "This is a binary, uploading to weepee transfer with curl: \n";
+            my $toexec = "curl --progress-bar --upload-file \""
+              . $ARGV[0]
+              . "\" \"https://transfer.weepee.io/"
+              . basename( $ARGV[0] )
+              . "\" | pb\n";
 
+            my $exec = "tmux send '" . $toexec . "'";
+            `$exec`;
+            exit;
+
+        }
+        else {
+            $data = read_file( $ARGV[0] );
+        }
+    }
 }
 
 if ( defined $directurl ) {
