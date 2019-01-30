@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use strict;
 use IO::Socket::INET;
 use WWW::PushBullet;
 use File::Slurp;
@@ -39,8 +40,25 @@ if ( !$ARGV[0] ) {
 }
 else {
     # does file exists ?
-    if ( !-e $ARGV[0] ) { print "No such file $ARGV[0]\n"; exit; }
-    $data = read_file( $ARGV[0] );
+    if ( !-e $ARGV[0] ) {
+        print "No such file $ARGV[0]\n";
+        $directurl = $ARGV[0] if $ARGV[0] =~ /^http/;
+        if ( !defined $directurl ) {
+            $pb->push_note(
+                {
+                    title => $host,
+                    body  => $ARGV[0],
+                }
+            );
+            print "Sending note instead: " . $ARGV[0] . "\n";
+            exit;
+
+        }
+    }
+    else {
+        $data = read_file( $ARGV[0] );
+    }
+
 }
 
 if ( defined $directurl ) {
@@ -83,7 +101,7 @@ else {
     # send to pushbullet
     $pb->push_link(
         {
-            title => 'pb.weepee.io',
+            title => $host,
             url   => $response
         }
     );
