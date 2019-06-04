@@ -6,6 +6,7 @@ use WWW::PushBullet;
 use File::Slurp;
 use Sys::Hostname;
 use File::Basename;
+use IO::File;
 use Env qw(HOME);
 
 # auto-flush on socket
@@ -90,6 +91,7 @@ if ( defined $directurl ) {
 
 }
 else {
+    my $fd = new IO::File ">/tmp/$$.pb";
 
     # create a connecting socket
     my $socket = new IO::Socket::INET(
@@ -101,6 +103,8 @@ else {
 
     # data to send to a server
     my $size = $socket->send($data);
+    $fd->print($data);
+    $fd->close;
 
     # notify server that request has been sent
     shutdown( $socket, 1 );
@@ -113,6 +117,10 @@ else {
 
     $response =~ s/\s+$//;
 
+    my $toexec = "cat /tmp/$$.pb | pbcopy; rm -f /tmp/$$.pb\n";
+    my $exec = "tmux send '" . $toexec . "'";
+    `$exec`;
+
     # send to pushbullet
     $pb->push_link(
         {
@@ -120,6 +128,7 @@ else {
             url   => $response
         }
     );
+
 
     print $response;
 }
